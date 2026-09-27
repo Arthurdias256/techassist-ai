@@ -1,4 +1,5 @@
 ﻿import os
+import concurrent.futures
 import google.generativeai as genai
 from dotenv import load_dotenv
 
@@ -18,16 +19,29 @@ Se a resposta nao estiver no contexto, diga claramente que nao sabe e nao invent
 Contexto:
 {contexto}"""
 
+TIMEOUT_SEGUNDOS = 10
+
 class GeminiIndisponivelError(Exception):
     pass
 
+class GeminiTimeoutError(Exception):
+    pass
+
+def _chamar_gemini(prompt: str):
+    return model.generate_content(prompt)
+
 def responder_pergunta(pergunta: str, contexto: str) -> str:
     prompt = SYSTEM_PROMPT.format(contexto=contexto) + f"\n\nPergunta: {pergunta}"
-    try:
-        resposta = model.generate_content(prompt)
-    except Exception as e:
-        raise GeminiIndisponivelError(str(e))
     
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future = executor.submit(_chamar_gemini, prompt)
+        try:
+            resposta = future.result(timeout=TIMEOUT_SEGUNDOS)
+        except concurrent.futures.TimeoutError:
+            raise GeminiTimeoutError("A IA demorou demais para responder")
+        except Exception as e:
+            raise GeminiIndisponivelError(str(e))
+            
     if not resposta.text:
         raise GeminiIndisponivelError("Resposta vazia da IA")
         
