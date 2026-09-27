@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>TechAssist AI</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+    textarea, input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 10px 20px;
+      cursor: pointer;
+    }
+    #resposta {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 6px;
+      white-space: pre-wrap;
+    }
+    .carregando {
+      background: #fff3cd;
+      color: #856404;
+    }
+    .sucesso {
+      background: #d4edda;
+      color: #155724;
+    }
+    .erro {
+      background: #f8d7da;
+      color: #721c24;
+    }
+  </style>
+</head>
+<body>
+  <h1>TechAssist AI</h1>
+  <p>Forneça um contexto e faça uma pergunta sobre ele.</p>
+
+  <label>Contexto</label>
+  <textarea id="contexto" rows="6" placeholder="Cole aqui o texto de referência..."></textarea>
+
+  <label>Pergunta</label>
+  <input id="pergunta" type="text" placeholder="Digite sua pergunta..." />
+
+  <button onclick="perguntar()">Perguntar</button>
+
+  <div id="resposta"></div>
+
+  <script>
+    async function perguntar() {
+      const contexto = document.getElementById("contexto").value.trim();
+      const pergunta = document.getElementById("pergunta").value.trim();
+      const resultado = document.getElementById("resposta");
+
+      if (!contexto || !pergunta) {
+        resultado.className = "erro";
+        resultado.textContent = "Preencha o contexto e a pergunta antes de enviar.";
+        return;
+      }
+
+      resultado.className = "carregando";
+      resultado.textContent = "Consultando a IA, aguarde...";
+
+      try {
+        const res = await fetch("/perguntar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pergunta, contexto }),
+        });
+
+        const dados = await res.json();
+
+        if (!res.ok) {
+          resultado.className = "erro";
+          resultado.textContent = dados.detail || "Ocorreu um erro ao consultar a IA.";
+          return;
+        }
+
+        resultado.className = "sucesso";
+        resultado.textContent = dados.resposta;
+      } catch (e) {
+        resultado.className = "erro";
+        resultado.textContent = "Não foi possível conectar à API.";
+      }
+    }
+  </script>
+</body>
+</html>

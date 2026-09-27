@@ -1,4 +1,6 @@
 ﻿from fastapi import FastAPI, HTTPException, Request
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -21,12 +23,11 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 @app.get("/")
-def read_root():
-    return {
-        "message": "TechAssist AI API esta ativa.",
-        "docs": "http://127.0.0.1:8000/docs"
-    }
+def home():
+    return FileResponse("static/index.html")
 
 @app.get("/health")
 def health_check():
@@ -45,7 +46,7 @@ def perguntar(request: Request, dados: PerguntaRequest):
     except GeminiIndisponivelError:
         raise HTTPException(
             status_code=503,
-            detail="O servico de IA esta indisponivel no momento. Tente novamente em instantes.",
+            detail="O serviço de IA está indisponível no momento. Tente novamente em instantes.",
         )
     except Exception:
         raise HTTPException(
@@ -53,4 +54,3 @@ def perguntar(request: Request, dados: PerguntaRequest):
             detail="Ocorreu um erro inesperado ao processar sua pergunta.",
         )
     return PerguntaResponse(resposta=resposta)
-
